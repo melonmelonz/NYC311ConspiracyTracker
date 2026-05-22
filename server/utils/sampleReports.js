@@ -1,0 +1,62 @@
+export const sampleReports = [
+  {
+    id: 1,
+    unique_key: 'fallback-001',
+    created_date: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
+    borough: 'BROOKLYN',
+    complaint_type: 'Noise - Residential',
+    descriptor: 'Strange noises and persistent humming reported from sealed basement area.',
+    latitude: 40.6782,
+    longitude: -73.9442,
+    conspiracy_category: 'NOISE PHENOMENA',
+    conspiracy_score: 84
+  },
+  {
+    id: 2,
+    unique_key: 'fallback-002',
+    created_date: new Date(Date.now() - 1000 * 60 * 74).toISOString(),
+    borough: 'MANHATTAN',
+    complaint_type: 'Street Condition',
+    descriptor: 'Unmarked camera watching intersection and possible listening device attached to signal box.',
+    latitude: 40.7484,
+    longitude: -73.9857,
+    conspiracy_category: 'SURVEILLANCE',
+    conspiracy_score: 88
+  },
+  {
+    id: 3,
+    unique_key: 'fallback-003',
+    created_date: new Date(Date.now() - 1000 * 60 * 220).toISOString(),
+    borough: 'QUEENS',
+    complaint_type: 'Air Quality',
+    descriptor: 'Chemical smell, testing suspicion, and buzzing frequencies near service hatch.',
+    latitude: 40.7282,
+    longitude: -73.7949,
+    conspiracy_category: 'GOVERNMENT EXPERIMENT',
+    conspiracy_score: 92
+  },
+  {
+    id: 4,
+    unique_key: 'fallback-004',
+    created_date: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
+    borough: 'BRONX',
+    complaint_type: 'Noise',
+    descriptor: 'Underground vibrations and subway noises reported after tunnels were closed.',
+    latitude: 40.8448,
+    longitude: -73.8648,
+    conspiracy_category: 'UNDERGROUND CONSPIRACY',
+    conspiracy_score: 87
+  },
+  {
+    id: 5,
+    unique_key: 'fallback-005',
+    created_date: new Date(Date.now() - 1000 * 60 * 860).toISOString(),
+    borough: 'STATEN ISLAND',
+    complaint_type: 'General',
+    descriptor: 'Unidentified lights and possible spacecraft activity over dark waterfront.',
+    latitude: 40.5795,
+    longitude: -74.1502,
+    conspiracy_category: 'ALIEN ACTIVITY',
+    conspiracy_score: 93
+  }
+];
