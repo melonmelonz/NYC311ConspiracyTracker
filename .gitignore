@@ -1,14 +1,4 @@
 node_modules/
-client/node_modules/
-server/node_modules/
-
-client/dist/
-.codex-run/
-
+dist/
 .env
-server/.env
-client/.env
-
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*

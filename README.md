@@ -1,116 +1,85 @@
-# 311 Conspiracy Tracker
+# NYC 311 Anomaly Tracker
 
-A full-stack PERN application that pulls NYC 311 complaints from NYC Open Data, classifies uncanny reports with a server-side keyword system, stores them in PostgreSQL, and renders a dark conspiracy-intelligence dashboard.
+A live conspiracy/paranormal intelligence dashboard built on NYC's real 311 complaint data. Fetches complaints directly from the [NYC Open Data Socrata API](https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9), classifies them in-browser using keyword analysis and scoring, and displays results across a dashboard, case file feed, interactive map, and analytics suite.
+
+Originally forked from [destinyheather92/NYC311ConspiracyTracker](https://github.com/destinyheather92/NYC311ConspiracyTracker) and rebuilt as a pure client-side app (no server/database required).
 
 ## Stack
 
-- PostgreSQL
-- Express.js
-- React.js with Vite
-- Node.js
-- Axios
-- Recharts
-- React Router
-- Leaflet.js
-- Tailwind CSS
+- **React 18** + **Vite** (static SPA)
+- **Tailwind CSS** (dark intelligence theme)
+- **Recharts** (data visualization)
+- **Leaflet** + **React-Leaflet** (interactive map)
+- **NYC Open Data Socrata API** (live 311 data, no API key required)
+
+No backend, no database. The app fetches live data from the public NYC API and classifies everything client-side.
+
+## Running Locally
+
+```bash
+# Clone the repo
+git clone https://github.com/melonmelonz/NYC311ConspiracyTracker.git
+cd NYC311ConspiracyTracker
+
+# Install dependencies
+npm install
+
+# Start dev server
+npm run dev
+```
+
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173) in your browser.
+
+## Building for Production
+
+```bash
+npm run build
+```
+
+Output goes to `dist/`. This is a static site -- serve it from any static host (Cloudflare Pages, Netlify, Vercel, etc.).
+
+## How It Works
+
+1. **Fetch**: On page load, the app fetches ~3000 recent NYC 311 complaints from the Socrata API, filtering for complaint types likely to contain anomalous content (noise, air quality, sewer, animal, hazmat, etc.)
+
+2. **Classify**: Each complaint runs through a client-side classifier that scores it against 9 conspiracy categories:
+   - Paranormal, Surveillance, Alien Activity, Underground, Gov Experiment, Cult Activity, Animal Anomaly, Noise Phenomena, Oddity
+
+3. **Score**: Reports get a conspiracy score (1-100) based on keyword rarity, suspicious language, category overlap, keyword density, and location data
+
+4. **Display**: Classified anomalies populate the dashboard, case feed, interactive map (dark Carto tiles), and analytics charts
+
+## Pages
+
+- **Dashboard** -- overview stats, trend chart, category breakdown, recent feed
+- **Case Feed** -- filterable list of all classified reports with search, borough/category filters, and score threshold
+- **Heat Map** -- Leaflet map with color-coded markers sized by conspiracy score
+- **Analytics** -- temporal trends, borough distribution, category pie chart, radar intensity
+
+## API
+
+This app calls the NYC Open Data Socrata API directly from the browser:
+
+```
+GET https://data.cityofnewyork.us/resource/erm2-nwe9.json
+    ?$limit=1000
+    &$offset=0
+    &$order=created_date DESC
+    &$where=complaint_type in('Noise - Residential', 'Air Quality', ...)
+```
+
+No API key is required. The Socrata API is public and CORS-enabled. An optional app token can improve rate limits but is not needed for normal use.
 
 ## Project Structure
 
-```text
-311ConspiracyTracker/
-  client/        React + Vite frontend
-  server/        Express API, services, PostgreSQL queries
 ```
-
-Backend folders required by the brief are included: `routes`, `controllers`, `services`, `db`, `middleware`, and `utils`.
-
-## Setup
-
-1. Create a PostgreSQL database.
-
-```sql
-CREATE DATABASE conspiracy_tracker;
+src/
+  api/nyc311.js          -- Socrata API client (fetch + pagination)
+  utils/classifier.js    -- Conspiracy classification engine
+  utils/categories.js    -- Category colors and names
+  utils/formatters.js    -- Date and number formatting
+  hooks/useAnomalies.js  -- React hooks for data fetching + caching
+  components/            -- Reusable UI components
+  pages/                 -- Dashboard, Reports, MapPage, Analytics
+  index.css              -- Dark theme styles + animations
 ```
-
-2. Copy the backend environment file.
-
-```powershell
-Copy-Item server\.env.example server\.env
-```
-
-3. Update `server/.env`.
-
-```env
-PORT=5000
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/conspiracy_tracker
-CLIENT_ORIGIN=http://localhost:5173
-NYC_311_API_URL=https://data.cityofnewyork.us/resource/erm2-nwe9.json
-NYC_APP_TOKEN=
-NYC_311_TARGET_RECORDS=10000
-NYC_311_PAGE_SIZE=1000
-NYC_311_MAX_PAGES=10
-LIVE_CACHE_TTL_MS=300000
-```
-
-`NYC_APP_TOKEN` is optional, but adding a Socrata app token improves live API reliability.
-
-4. Run the schema and seed SQL.
-
-```powershell
-psql -d conspiracy_tracker -f server\db\schema.sql
-psql -d conspiracy_tracker -f server\db\seed.sql
-```
-
-5. Install dependencies.
-
-```powershell
-npm.cmd install
-npm.cmd run install:all
-```
-
-6. Start the app.
-
-```powershell
-npm.cmd run dev
-```
-
-Frontend: `http://localhost:5173`
-
-Backend: `http://localhost:5000`
-
-## API Routes
-
-- `GET /api/reports`
-- `GET /api/reports/category/:category`
-- `GET /api/reports/borough/:borough`
-- `GET /api/reports/search?q=`
-- `GET /api/stats`
-- `GET /api/map-data`
-
-Most report routes accept query filters:
-
-- `limit`
-- `borough`
-- `category`
-- `q`
-- `minScore`
-
-## How Classification Works
-
-The backend fetches live 311 data from:
-
-`https://data.cityofnewyork.us/resource/erm2-nwe9.json`
-
-It pages through NYC Open Data with `$limit` and `$offset`, for example `?$limit=1000&$offset=0`, then aggregates several pages before classification. It examines both `complaint_type` and `descriptor`, normalizes text to lowercase, supports partial keyword matches, allows category overlap, calculates deterministic conspiracy scores from rarity/overlap/suspicious language, filters out irrelevant complaints, and stores only conspiracy-related results.
-
-If PostgreSQL or the NYC API is unavailable during local development, the API falls back to seeded in-memory reports so the interface remains testable.
-
-## Image Placeholders
-
-The React components include obvious placeholder zones and source comments such as:
-
-```html
-<!-- INSERT CUSTOM CONSPIRACY IMAGE HERE -->
-```
-
-and visible placeholder panels for future witness photos, evidence boards, posters, and pinned investigation images.
