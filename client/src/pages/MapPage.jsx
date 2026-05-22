@@ -1,44 +1,60 @@
-import { useMemo, useState } from 'react';
-import L from 'leaflet';
-import { Circle, MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
-import FilterBar from '../components/FilterBar';
-import LoadingState from '../components/LoadingState';
-import { useMapReports } from '../hooks/useReports';
-import { getCategoryColor } from '../utils/categories';
-import { formatDate } from '../utils/formatters';
+import { useMemo, useState } from "react";
+import L from "leaflet";
+import { Circle, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import FilterBar from "../components/FilterBar";
+import LoadingState from "../components/LoadingState";
+import { useMapReports } from "../hooks/useReports";
+import { getCategoryColor } from "../utils/categories";
+import { formatDate } from "../utils/formatters";
+
+const markerIconCache = new Map();
 
 function createMarkerIcon(category, score) {
   const color = getCategoryColor(category);
+  const scoreBucket = Math.round(Number(score || 1) / 10) * 10;
+  const cacheKey = `${category}:${scoreBucket}`;
 
-  return L.divIcon({
-    className: 'conspiracy-marker',
-    html: `<span style="--marker-color:${color}; --marker-size:${Math.max(18, Math.min(42, score / 2))}px"></span>`,
+  if (markerIconCache.has(cacheKey)) {
+    return markerIconCache.get(cacheKey);
+  }
+
+  const icon = L.divIcon({
+    className: "conspiracy-marker",
+    html: `<span style="--marker-color:${color}; --marker-size:${Math.max(18, Math.min(42, scoreBucket / 2))}px"></span>`,
     iconSize: [44, 44],
     iconAnchor: [22, 22],
-    popupAnchor: [0, -18]
+    popupAnchor: [0, -18],
   });
+
+  markerIconCache.set(cacheKey, icon);
+  return icon;
 }
 
 export default function MapPage() {
-  const [filters, setFilters] = useState({ limit: 240, minScore: 1 });
+  const [filters, setFilters] = useState({ limit: 120, minScore: 1 });
   const mapFilters = useMemo(
     () => ({
       limit: filters.limit,
       minScore: filters.minScore,
       borough: filters.borough,
       category: filters.category,
-      q: filters.q
+      q: filters.q,
     }),
-    [filters]
+    [filters],
   );
   const { reports, dangerZones, loading } = useMapReports(mapFilters);
+  const visibleReports = useMemo(() => reports.slice(0, 180), [reports]);
 
   return (
     <div className="space-y-6">
       <section className="flex flex-col gap-3 border-b border-paper/10 pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-body text-xs uppercase tracking-[0.28em] text-alien">NYC Heat Map</p>
-          <h2 className="mt-2 font-display text-6xl leading-none text-aged">Conspiracy Hotspots</h2>
+          <p className="font-body text-xs uppercase tracking-[0.28em] text-alien">
+            NYC Heat Map
+          </p>
+          <h2 className="mt-2 font-display text-6xl leading-none text-aged">
+            Conspiracy Hotspots
+          </h2>
         </div>
         <p className="font-marker text-3xl text-paper">DANGER ZONES MARKED</p>
       </section>
@@ -53,6 +69,7 @@ export default function MapPage() {
             center={[40.7128, -74.006]}
             zoom={11}
             scrollWheelZoom
+            preferCanvas
             className="h-[72vh] min-h-[34rem] w-full"
           >
             <TileLayer
@@ -70,7 +87,7 @@ export default function MapPage() {
                   fillColor: getCategoryColor(zone.category),
                   fillOpacity: 0.12,
                   opacity: 0.55,
-                  weight: 2
+                  weight: 2,
                 }}
               >
                 <Popup>
@@ -83,28 +100,42 @@ export default function MapPage() {
               </Circle>
             ))}
 
-            {reports.map((report) => (
-              <Marker
-                key={report.unique_key}
-                position={[Number(report.latitude), Number(report.longitude)]}
-                icon={createMarkerIcon(report.conspiracy_category, report.conspiracy_score)}
-              >
-                <Popup>
-                  <div className="map-popup">
-                    <strong>{report.conspiracy_category}</strong>
-                    <span>{report.borough}</span>
-                    <span>{formatDate(report.created_date)}</span>
-                    <p>{report.descriptor}</p>
-                    <b>Score {report.conspiracy_score}</b>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
+            {visibleReports.map((report) => {
+              const reportCategories = report.conspiracy_categories?.length
+                ? report.conspiracy_categories
+                : [report.conspiracy_category];
+              const primaryCategory = reportCategories[0];
+
+              return (
+                <Marker
+                  key={report.unique_key}
+                  position={[Number(report.latitude), Number(report.longitude)]}
+                  icon={createMarkerIcon(
+                    primaryCategory,
+                    report.conspiracy_score,
+                  )}
+                >
+                  <Popup>
+                    <div className="map-popup">
+                      <strong>{reportCategories.join(" / ")}</strong>
+                      <span>{report.borough}</span>
+                      <span>{formatDate(report.created_date)}</span>
+                      <p>{report.descriptor}</p>
+                      <b>Score {report.conspiracy_score}</b>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         )}
         <div className="pointer-events-none absolute left-4 top-4 z-[500] rounded-[6px] border border-surveillance/30 bg-matte/80 px-4 py-3 shadow-terminal backdrop-blur">
-          <p className="font-body text-xs uppercase tracking-[0.25em] text-surveillance">LIVE MAP FEED</p>
-          <p className="mt-1 font-display text-4xl text-aged">{reports.length}</p>
+          <p className="font-body text-xs uppercase tracking-[0.25em] text-surveillance">
+            LIVE MAP FEED
+          </p>
+          <p className="mt-1 font-display text-4xl text-aged">
+            {visibleReports.length}
+          </p>
         </div>
       </section>
     </div>

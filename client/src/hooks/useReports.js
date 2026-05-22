@@ -62,6 +62,7 @@ export function useStats() {
 export function useMapReports(filters = {}) {
   const [payload, setPayload] = useState({ reports: [], dangerZones: [] });
   const [loading, setLoading] = useState(true);
+  const filterKey = JSON.stringify(filters);
 
   useEffect(() => {
     let mounted = true;
@@ -77,7 +78,7 @@ export function useMapReports(filters = {}) {
     return () => {
       mounted = false;
     };
-  }, [filters]);
+  }, [filterKey]);
 
   return { ...payload, loading };
 }

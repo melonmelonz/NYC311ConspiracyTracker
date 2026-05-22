@@ -46,6 +46,10 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5432/conspiracy_tracker
 CLIENT_ORIGIN=http://localhost:5173
 NYC_311_API_URL=https://data.cityofnewyork.us/resource/erm2-nwe9.json
 NYC_APP_TOKEN=
+NYC_311_TARGET_RECORDS=10000
+NYC_311_PAGE_SIZE=1000
+NYC_311_MAX_PAGES=10
+LIVE_CACHE_TTL_MS=300000
 ```
 
 `NYC_APP_TOKEN` is optional, but adding a Socrata app token improves live API reliability.
@@ -97,7 +101,7 @@ The backend fetches live 311 data from:
 
 `https://data.cityofnewyork.us/resource/erm2-nwe9.json`
 
-It examines `complaint_type` and `descriptor`, matches them against category keyword lists, calculates a deterministic conspiracy score from keyword density and report details, filters out irrelevant complaints, and stores only conspiracy-related results.
+It pages through NYC Open Data with `$limit` and `$offset`, for example `?$limit=1000&$offset=0`, then aggregates several pages before classification. It examines both `complaint_type` and `descriptor`, normalizes text to lowercase, supports partial keyword matches, allows category overlap, calculates deterministic conspiracy scores from rarity/overlap/suspicious language, filters out irrelevant complaints, and stores only conspiracy-related results.
 
 If PostgreSQL or the NYC API is unavailable during local development, the API falls back to seeded in-memory reports so the interface remains testable.
 

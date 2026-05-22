@@ -1,4 +1,4 @@
-import { query } from './pool.js';
+import { query } from "./pool.js";
 
 const REPORT_COLUMNS = `
   id,
@@ -10,20 +10,52 @@ const REPORT_COLUMNS = `
   latitude,
   longitude,
   conspiracy_category,
-  conspiracy_score
+  conspiracy_categories,
+  conspiracy_score,
+  matched_keywords,
+  classification_details
 `;
 
 export async function upsertConspiracyReports(reports) {
   if (!reports.length) return [];
 
   const savedReports = [];
+  const chunkSize = 400;
 
-  for (const report of reports) {
+  for (let start = 0; start < reports.length; start += chunkSize) {
+    const reportChunk = reports.slice(start, start + chunkSize);
+    const values = [];
+    const placeholders = reportChunk.map((report, index) => {
+      const base = index * 12;
+      const reportCategories = report.conspiracy_categories?.length
+        ? report.conspiracy_categories
+        : [report.conspiracy_category];
+      const matchedKeywords = report.matched_keywords || [];
+      const classificationDetails = report.classification_details || {};
+
+      values.push(
+        report.unique_key,
+        report.created_date,
+        report.borough,
+        report.complaint_type,
+        report.descriptor,
+        report.latitude,
+        report.longitude,
+        report.conspiracy_category,
+        reportCategories,
+        report.conspiracy_score,
+        matchedKeywords,
+        JSON.stringify(classificationDetails),
+      );
+
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6}, $${base + 7}, $${base + 8}, $${base + 9}::TEXT[], $${base + 10}, $${base + 11}::TEXT[], $${base + 12}::JSONB)`;
+    });
+
     /*
       Database query note:
-      Each live NYC 311 report is keyed by unique_key. ON CONFLICT lets the
-      app refresh category/score/details without duplicating the same complaint
-      every time the live API is polled.
+      Live NYC 311 sync can now classify thousands of rows per refresh. The
+      query below performs a batched parameterized upsert, which is far cheaper
+      than one INSERT per report while preserving the unique_key de-duplication.
     */
     const result = await query(
       `
@@ -36,8 +68,11 @@ export async function upsertConspiracyReports(reports) {
           latitude,
           longitude,
           conspiracy_category,
-          conspiracy_score
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          conspiracy_categories,
+          conspiracy_score,
+          matched_keywords,
+          classification_details
+        ) VALUES ${placeholders.join(", ")}
         ON CONFLICT (unique_key) DO UPDATE SET
           created_date = EXCLUDED.created_date,
           borough = EXCLUDED.borough,
@@ -46,24 +81,17 @@ export async function upsertConspiracyReports(reports) {
           latitude = EXCLUDED.latitude,
           longitude = EXCLUDED.longitude,
           conspiracy_category = EXCLUDED.conspiracy_category,
+          conspiracy_categories = EXCLUDED.conspiracy_categories,
           conspiracy_score = EXCLUDED.conspiracy_score,
+          matched_keywords = EXCLUDED.matched_keywords,
+          classification_details = EXCLUDED.classification_details,
           updated_at = NOW()
         RETURNING ${REPORT_COLUMNS};
       `,
-      [
-        report.unique_key,
-        report.created_date,
-        report.borough,
-        report.complaint_type,
-        report.descriptor,
-        report.latitude,
-        report.longitude,
-        report.conspiracy_category,
-        report.conspiracy_score
-      ]
+      values,
     );
 
-    savedReports.push(result.rows[0]);
+    savedReports.push(...result.rows);
   }
 
   return savedReports;
@@ -74,15 +102,17 @@ export async function getReports({
   borough,
   search,
   minScore = 1,
-  limit = 80
+  limit = 80,
 } = {}) {
   const values = [];
-  const clauses = ['conspiracy_score >= $1'];
+  const clauses = ["conspiracy_score >= $1"];
   values.push(Number(minScore));
 
   if (category) {
     values.push(category.toUpperCase());
-    clauses.push(`conspiracy_category = $${values.length}`);
+    clauses.push(
+      `(conspiracy_category = $${values.length} OR conspiracy_categories @> ARRAY[$${values.length}]::TEXT[])`,
+    );
   }
 
   if (borough) {
@@ -91,13 +121,23 @@ export async function getReports({
   }
 
   if (search) {
+    values.push(search);
+    const textSearchIndex = values.length;
     values.push(`%${search}%`);
+    const wildcardIndex = values.length;
     clauses.push(`
       (
-        complaint_type ILIKE $${values.length}
-        OR descriptor ILIKE $${values.length}
-        OR conspiracy_category ILIKE $${values.length}
-        OR borough ILIKE $${values.length}
+        to_tsvector('english', COALESCE(complaint_type, '') || ' ' || COALESCE(descriptor, ''))
+          @@ plainto_tsquery('english', $${textSearchIndex})
+        OR complaint_type ILIKE $${wildcardIndex}
+        OR descriptor ILIKE $${wildcardIndex}
+        OR conspiracy_category ILIKE $${wildcardIndex}
+        OR borough ILIKE $${wildcardIndex}
+        OR EXISTS (
+          SELECT 1
+          FROM unnest(conspiracy_categories) AS category_names(category_name)
+          WHERE category_name ILIKE $${wildcardIndex}
+        )
       )
     `);
   }
@@ -114,11 +154,11 @@ export async function getReports({
     `
       SELECT ${REPORT_COLUMNS}
       FROM conspiracy_reports
-      WHERE ${clauses.join(' AND ')}
-      ORDER BY created_date DESC, conspiracy_score DESC
+      WHERE ${clauses.join(" AND ")}
+      ORDER BY conspiracy_score DESC, created_date DESC
       LIMIT $${values.length};
     `,
-    values
+    values,
   );
 
   return result.rows;
@@ -132,23 +172,38 @@ export async function getStats() {
   */
   const [summary, byCategory, byBorough, trend] = await Promise.all([
     query(`
-      SELECT
-        COUNT(*)::INT AS total_reports,
-        COUNT(*)::INT AS conspiracy_reports,
-        COUNT(DISTINCT conspiracy_category)::INT AS active_categories,
-        COALESCE(
-          (ARRAY_AGG(borough ORDER BY borough_count DESC))[1],
-          'UNKNOWN'
-        ) AS top_borough
-      FROM (
-        SELECT *, COUNT(*) OVER (PARTITION BY borough) AS borough_count
+      WITH category_rows AS (
+        SELECT unnest(
+          CASE
+            WHEN array_length(conspiracy_categories, 1) > 0 THEN conspiracy_categories
+            ELSE ARRAY[conspiracy_category]
+          END
+        ) AS category
         FROM conspiracy_reports
-      ) ranked;
+      ),
+      borough_rows AS (
+        SELECT borough, COUNT(*) AS borough_count
+        FROM conspiracy_reports
+        GROUP BY borough
+        ORDER BY borough_count DESC
+        LIMIT 1
+      )
+      SELECT
+        (SELECT COUNT(*)::INT FROM conspiracy_reports) AS total_reports,
+        (SELECT COUNT(*)::INT FROM conspiracy_reports) AS conspiracy_reports,
+        (SELECT COUNT(DISTINCT category)::INT FROM category_rows) AS active_categories,
+        COALESCE((SELECT borough FROM borough_rows), 'UNKNOWN') AS top_borough;
     `),
     query(`
-      SELECT conspiracy_category AS name, COUNT(*)::INT AS value
-      FROM conspiracy_reports
-      GROUP BY conspiracy_category
+      SELECT category AS name, COUNT(*)::INT AS value
+      FROM conspiracy_reports,
+      LATERAL unnest(
+        CASE
+          WHEN array_length(conspiracy_categories, 1) > 0 THEN conspiracy_categories
+          ELSE ARRAY[conspiracy_category]
+        END
+      ) AS category_rows(category)
+      GROUP BY category
       ORDER BY value DESC;
     `),
     query(`
@@ -165,13 +220,13 @@ export async function getStats() {
       WHERE created_date >= NOW() - INTERVAL '30 days'
       GROUP BY DATE_TRUNC('day', created_date)
       ORDER BY DATE_TRUNC('day', created_date);
-    `)
+    `),
   ]);
 
   return {
     summary: summary.rows[0],
     byCategory: byCategory.rows,
     byBorough: byBorough.rows,
-    trend: trend.rows
+    trend: trend.rows,
   };
 }

@@ -7,7 +7,10 @@ INSERT INTO conspiracy_reports (
   latitude,
   longitude,
   conspiracy_category,
-  conspiracy_score
+  conspiracy_categories,
+  conspiracy_score,
+  matched_keywords,
+  classification_details
 ) VALUES
 (
   'seed-phantom-frequency-001',
@@ -18,7 +21,10 @@ INSERT INTO conspiracy_reports (
   40.6782,
   -73.9442,
   'NOISE PHENOMENA',
-  82
+  ARRAY['NOISE PHENOMENA'],
+  82,
+  ARRAY['humming', 'strange noises'],
+  '{"overlapCount": 1}'::JSONB
 ),
 (
   'seed-watchers-002',
@@ -29,7 +35,10 @@ INSERT INTO conspiracy_reports (
   40.7831,
   -73.9712,
   'SURVEILLANCE',
-  76
+  ARRAY['SURVEILLANCE'],
+  76,
+  ARRAY['camera', 'watching', 'surveillance'],
+  '{"overlapCount": 1}'::JSONB
 ),
 (
   'seed-vibration-grid-003',
@@ -40,7 +49,10 @@ INSERT INTO conspiracy_reports (
   40.7282,
   -73.7949,
   'UNDERGROUND CONSPIRACY',
-  88
+  ARRAY['UNDERGROUND CONSPIRACY', 'NOISE PHENOMENA'],
+  88,
+  ARRAY['underground', 'vibrations', 'subway noises'],
+  '{"overlapCount": 2}'::JSONB
 ),
 (
   'seed-unmarked-tests-004',
@@ -51,7 +63,10 @@ INSERT INTO conspiracy_reports (
   40.8448,
   -73.8648,
   'GOVERNMENT EXPERIMENT',
-  91
+  ARRAY['GOVERNMENT EXPERIMENT'],
+  91,
+  ARRAY['chemical smell', 'testing'],
+  '{"overlapCount": 1}'::JSONB
 ),
 (
   'seed-lights-005',
@@ -62,6 +77,9 @@ INSERT INTO conspiracy_reports (
   40.5795,
   -74.1502,
   'ALIEN ACTIVITY',
-  93
+  ARRAY['ALIEN ACTIVITY'],
+  93,
+  ARRAY['unidentified lights', 'spacecraft'],
+  '{"overlapCount": 1}'::JSONB
 )
 ON CONFLICT (unique_key) DO NOTHING;

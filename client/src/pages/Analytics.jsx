@@ -23,6 +23,7 @@ import EvidenceImagePlaceholder from '../components/EvidenceImagePlaceholder';
 import LoadingState from '../components/LoadingState';
 import { useStats } from '../hooks/useReports';
 import { getCategoryColor } from '../utils/categories';
+import { conspiracyImages } from '../assets/conspiracyImages';
 
 const tooltipStyle = {
   background: '#0a0a0a',
@@ -141,9 +142,19 @@ export default function Analytics() {
             </div>
           </ChartPanel>
 
-          <div className="space-y-4">
-            <EvidenceImagePlaceholder label="EVIDENCE PHOTO BOARD SLOT" />
-            <EvidenceImagePlaceholder label="CUSTOM ANALYTIC POSTER SLOT" />
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+            <EvidenceImagePlaceholder
+              label="EVIDENCE PHOTO BOARD"
+              src={conspiracyImages.evidencePhotoBoard}
+              alt="Evidence photo board screenshot"
+              variant="landscape"
+            />
+            <EvidenceImagePlaceholder
+              label="CUSTOM ANALYTIC POSTER"
+              src={conspiracyImages.analyticPoster}
+              alt="Analytic poster screenshot"
+              variant="portrait"
+            />
           </div>
         </div>
       )}

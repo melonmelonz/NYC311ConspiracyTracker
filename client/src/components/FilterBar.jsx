@@ -1,11 +1,12 @@
-import { Filter, Search } from 'lucide-react';
-import { boroughs, categories } from '../utils/categories';
+import { memo } from "react";
+import { Filter, Search } from "lucide-react";
+import { boroughs, categories } from "../utils/categories";
 
-export default function FilterBar({ filters, onChange }) {
+function FilterBar({ filters, onChange }) {
   function patchFilter(key, value) {
     onChange({
       ...filters,
-      [key]: value || undefined
+      [key]: value || undefined,
     });
   }
 
@@ -15,8 +16,8 @@ export default function FilterBar({ filters, onChange }) {
         <label className="terminal-input flex items-center gap-2 px-3 py-2">
           <Search size={16} className="text-surveillance" />
           <input
-            value={filters.q || ''}
-            onChange={(event) => patchFilter('q', event.target.value)}
+            value={filters.q || ""}
+            onChange={(event) => patchFilter("q", event.target.value)}
             placeholder="SEARCH INCIDENT TEXT"
             className="w-full bg-transparent font-body text-sm uppercase tracking-[0.12em] text-aged outline-none placeholder:text-muted"
           />
@@ -25,8 +26,8 @@ export default function FilterBar({ filters, onChange }) {
         <label className="terminal-select">
           <Filter size={15} />
           <select
-            value={filters.borough || ''}
-            onChange={(event) => patchFilter('borough', event.target.value)}
+            value={filters.borough || ""}
+            onChange={(event) => patchFilter("borough", event.target.value)}
           >
             <option value="">ALL BOROUGHS</option>
             {boroughs.map((borough) => (
@@ -40,8 +41,8 @@ export default function FilterBar({ filters, onChange }) {
         <label className="terminal-select">
           <Filter size={15} />
           <select
-            value={filters.category || ''}
-            onChange={(event) => patchFilter('category', event.target.value)}
+            value={filters.category || ""}
+            onChange={(event) => patchFilter("category", event.target.value)}
           >
             <option value="">ALL CATEGORIES</option>
             {categories.map((category) => (
@@ -52,17 +53,24 @@ export default function FilterBar({ filters, onChange }) {
           </select>
         </label>
 
-        <label className="terminal-input flex items-center gap-3 px-3 py-2">
-          <span className="font-body text-xs uppercase tracking-[0.2em] text-muted">Score</span>
+        <label className="terminal-input flex flex-col gap-2 rounded-[6px] border border-paper/10 bg-charcoal/30 p-3">
+          <div className="flex items-center justify-between">
+            <span className="font-body text-xs uppercase tracking-[0.2em] text-muted">
+              Conspiracy Threshold
+            </span>
+            <span className="text-xs uppercase tracking-[0.12em] text-aged">
+              Higher = more suspicious
+            </span>
+          </div>
           <input
             type="range"
             min="1"
             max="100"
             value={filters.minScore || 1}
-            onChange={(event) => patchFilter('minScore', event.target.value)}
+            onChange={(event) => patchFilter("minScore", event.target.value)}
             className="w-full accent-crimson"
           />
-          <span className="w-8 text-right font-display text-2xl text-surveillance">
+          <span className="text-right font-display text-2xl text-surveillance">
             {filters.minScore || 1}
           </span>
         </label>
@@ -70,3 +78,5 @@ export default function FilterBar({ filters, onChange }) {
     </section>
   );
 }
+
+export default memo(FilterBar);

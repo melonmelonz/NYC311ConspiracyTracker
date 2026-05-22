@@ -3,8 +3,8 @@ import {
   Archive,
   FolderKanban,
   MapPinned,
-  RadioTower
-} from 'lucide-react';
+  RadioTower,
+} from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -17,31 +17,47 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
-} from 'recharts';
-import ChartPanel from '../components/ChartPanel';
-import ClassifiedStamp from '../components/ClassifiedStamp';
-import EmptyState from '../components/EmptyState';
-import EvidenceCard from '../components/EvidenceCard';
-import EvidenceImagePlaceholder from '../components/EvidenceImagePlaceholder';
-import LoadingState from '../components/LoadingState';
-import StatCard from '../components/StatCard';
-import { useReports, useStats } from '../hooks/useReports';
-import { getCategoryColor } from '../utils/categories';
-import { compactNumber } from '../utils/formatters';
-import evidenceWall from '../assets/evidence-wall.png';
+  YAxis,
+} from "recharts";
+import ChartPanel from "../components/ChartPanel";
+import ClassifiedStamp from "../components/ClassifiedStamp";
+import EmptyState from "../components/EmptyState";
+import EvidenceCard from "../components/EvidenceCard";
+import EvidenceImagePlaceholder from "../components/EvidenceImagePlaceholder";
+import LoadingState from "../components/LoadingState";
+import StatCard from "../components/StatCard";
+import { useReports, useStats } from "../hooks/useReports";
+import { getCategoryColor } from "../utils/categories";
+import { compactNumber } from "../utils/formatters";
+import evidenceWall from "../assets/evidence-wall.png";
+import { conspiracyImages } from "../assets/conspiracyImages";
 
 function chartTooltipStyle() {
   return {
-    background: '#0a0a0a',
-    border: '1px solid rgba(184,169,143,0.25)',
+    background: "#0a0a0a",
+    border: "1px solid rgba(184,169,143,0.25)",
     borderRadius: 6,
-    color: '#d9d2c5'
+    color: "#d9d2c5",
   };
 }
 
+function categoryTooltip({ active, payload }) {
+  if (!active || !payload || !payload.length) return null;
+
+  const entry = payload[0];
+
+  return (
+    <div style={chartTooltipStyle()}>
+      <div className="font-display text-sm text-aged">
+        {entry.name || "Unknown"}
+      </div>
+      <div className="mt-1 text-xs text-muted">Reports: {entry.value}</div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
-  const { reports, loading } = useReports({ limit: 8, minScore: 1 });
+  const { reports, loading } = useReports({ limit: 12, minScore: 1 });
   const { stats, loading: statsLoading } = useStats();
   const summary = stats?.summary || {};
   const byCategory = stats?.byCategory || [];
@@ -51,7 +67,11 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <section className="hero-board relative min-h-[32rem] overflow-hidden rounded-[6px] border border-paper/10 shadow-evidence">
-        <img src={evidenceWall} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src={evidenceWall}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-r from-matte via-matte/78 to-matte/35" />
         <div className="red-string string-a" />
         <div className="red-string string-b" />
@@ -62,26 +82,38 @@ export default function Dashboard() {
               311 Conspiracy Tracker
             </h2>
             <p className="mt-5 max-w-2xl font-marker text-3xl leading-tight text-paper">
-              Evidence intake, anomaly scoring, borough signal mapping.
+              Classified archive of NYC’s strangest 311 complaints from 2005 to
+              present.
             </p>
           </div>
           <div className="self-end xl:self-center">
-            <div className="classified-panel max-w-md">
+            <div className="classified-panel max-w-lg">
               <div className="mb-4 flex items-center justify-between">
                 <span className="live-dot" />
                 <ClassifiedStamp tone="green">ACTIVE CASE</ClassifiedStamp>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="border border-paper/10 bg-black/35 p-3">
-                  <p className="font-body text-xs uppercase tracking-[0.24em] text-muted">Signal</p>
-                  <p className="font-display text-4xl text-surveillance">LIVE</p>
+                  <p className="font-body text-xs uppercase tracking-[0.24em] text-muted">
+                    Signal
+                  </p>
+                  <p className="font-display text-4xl text-surveillance">
+                    LIVE
+                  </p>
                 </div>
                 <div className="border border-paper/10 bg-black/35 p-3">
-                  <p className="font-body text-xs uppercase tracking-[0.24em] text-muted">Protocol</p>
+                  <p className="font-body text-xs uppercase tracking-[0.24em] text-muted">
+                    Protocol
+                  </p>
                   <p className="font-display text-4xl text-crimson">311</p>
                 </div>
               </div>
-              <EvidenceImagePlaceholder label="WITNESS PHOTO SLOT" />
+              <EvidenceImagePlaceholder
+                label="WITNESS PHOTO"
+                src={conspiracyImages.sidebarPoster}
+                alt="Witness evidence screenshot"
+                variant="landscape"
+              />
             </div>
           </div>
         </div>
@@ -91,7 +123,11 @@ export default function Dashboard() {
         <StatCard
           icon={Archive}
           label="Total Reports"
-          value={compactNumber(summary.total_reports || summary.conspiracy_reports || reports.length)}
+          value={compactNumber(
+            summary.total_reports ||
+              summary.conspiracy_reports ||
+              reports.length,
+          )}
           detail="Records in the local evidence vault"
           accent="#b8a98f"
         />
@@ -112,7 +148,7 @@ export default function Dashboard() {
         <StatCard
           icon={MapPinned}
           label="Top Borough"
-          value={summary.top_borough || 'UNKNOWN'}
+          value={summary.top_borough || "UNKNOWN"}
           detail="Highest current signal density"
           accent="#3a86ff"
         />
@@ -128,12 +164,28 @@ export default function Dashboard() {
                 <AreaChart data={trend}>
                   <defs>
                     <linearGradient id="trendGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#c1121f" stopOpacity={0.85} />
-                      <stop offset="95%" stopColor="#c1121f" stopOpacity={0.02} />
+                      <stop
+                        offset="5%"
+                        stopColor="#c1121f"
+                        stopOpacity={0.85}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="#c1121f"
+                        stopOpacity={0.02}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgba(184,169,143,0.08)" vertical={false} />
-                  <XAxis dataKey="date" stroke="#8c8c8c" tickLine={false} axisLine={false} />
+                  <CartesianGrid
+                    stroke="rgba(184,169,143,0.08)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    stroke="#8c8c8c"
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <YAxis stroke="#8c8c8c" tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={chartTooltipStyle()} />
                   <Area
@@ -172,10 +224,13 @@ export default function Dashboard() {
                     paddingAngle={4}
                   >
                     {byCategory.map((entry) => (
-                      <Cell key={entry.name} fill={getCategoryColor(entry.name)} />
+                      <Cell
+                        key={entry.name}
+                        fill={getCategoryColor(entry.name)}
+                      />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={chartTooltipStyle()} />
+                  <Tooltip content={categoryTooltip} />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -191,12 +246,24 @@ export default function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={byBorough}>
-                  <CartesianGrid stroke="rgba(184,169,143,0.08)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#8c8c8c" tickLine={false} axisLine={false} />
+                  <CartesianGrid
+                    stroke="rgba(184,169,143,0.08)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#8c8c8c"
+                    tickLine={false}
+                    axisLine={false}
+                  />
                   <YAxis stroke="#8c8c8c" tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={chartTooltipStyle()} />
                   <Bar dataKey="reports" fill="#b6461b" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="intensity" fill="#00ff88" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="intensity"
+                    fill="#00ff88"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             )}

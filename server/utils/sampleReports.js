@@ -9,7 +9,9 @@ export const sampleReports = [
     latitude: 40.6782,
     longitude: -73.9442,
     conspiracy_category: 'NOISE PHENOMENA',
-    conspiracy_score: 84
+    conspiracy_categories: ['NOISE PHENOMENA'],
+    conspiracy_score: 84,
+    matched_keywords: ['strange noises', 'humming']
   },
   {
     id: 2,
@@ -21,7 +23,9 @@ export const sampleReports = [
     latitude: 40.7484,
     longitude: -73.9857,
     conspiracy_category: 'SURVEILLANCE',
-    conspiracy_score: 88
+    conspiracy_categories: ['SURVEILLANCE'],
+    conspiracy_score: 88,
+    matched_keywords: ['camera', 'watching', 'listening']
   },
   {
     id: 3,
@@ -33,7 +37,9 @@ export const sampleReports = [
     latitude: 40.7282,
     longitude: -73.7949,
     conspiracy_category: 'GOVERNMENT EXPERIMENT',
-    conspiracy_score: 92
+    conspiracy_categories: ['GOVERNMENT EXPERIMENT', 'NOISE PHENOMENA'],
+    conspiracy_score: 92,
+    matched_keywords: ['chemical smell', 'testing', 'buzzing', 'frequencies']
   },
   {
     id: 4,
@@ -45,7 +51,9 @@ export const sampleReports = [
     latitude: 40.8448,
     longitude: -73.8648,
     conspiracy_category: 'UNDERGROUND CONSPIRACY',
-    conspiracy_score: 87
+    conspiracy_categories: ['UNDERGROUND CONSPIRACY', 'NOISE PHENOMENA'],
+    conspiracy_score: 87,
+    matched_keywords: ['underground', 'vibrations', 'subway noises']
   },
   {
     id: 5,
@@ -57,6 +65,8 @@ export const sampleReports = [
     latitude: 40.5795,
     longitude: -74.1502,
     conspiracy_category: 'ALIEN ACTIVITY',
-    conspiracy_score: 93
+    conspiracy_categories: ['ALIEN ACTIVITY'],
+    conspiracy_score: 93,
+    matched_keywords: ['unidentified lights', 'spacecraft']
   }
 ];

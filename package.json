@@ -4,12 +4,12 @@
   "private": true,
   "description": "A cinematic PERN dashboard that classifies NYC 311 complaints as conspiracy intelligence reports.",
   "scripts": {
-    "install:all": "npm.cmd install --prefix server && npm.cmd install --prefix client",
-    "dev": "concurrently \"npm.cmd --prefix server run dev\" \"npm.cmd --prefix client run dev\"",
-    "server": "npm.cmd --prefix server run dev",
-    "client": "npm.cmd --prefix client run dev",
-    "build": "npm.cmd --prefix client run build",
-    "start": "npm.cmd --prefix server start"
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "server": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
