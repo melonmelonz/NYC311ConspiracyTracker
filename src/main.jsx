@@ -7,7 +7,7 @@ import App from "./App.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/311">
       <App />
     </BrowserRouter>
   </React.StrictMode>
